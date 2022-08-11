@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -34,7 +35,14 @@ func switchboard(src, dest string, info os.FileInfo, opt Options) (err error) {
 	case info.Mode()&os.ModeNamedPipe != 0:
 		err = pcopy(dest, info)
 	default:
-		err = fcopy(src, dest, info, opt)
+		for try := 0; try < 3; try++ {
+			err = fcopy(src, dest, info, opt)
+			// Windows Error Code 1237: The operation could not be completed. A retry should be performed.
+			if err != nil && strings.Contains(err.Error(), "A retry should be performed") {
+				continue
+			}
+			break
+		}
 	}
 
 	return err
